@@ -113,6 +113,8 @@ class FileDigest:
     def calc(self, path, level=0):
         with open(path, 'rb') as f:
             m = HASHGEN()
+            if level > 0:
+                f.seek((1 << (level - 1)) * BUFSIZE)
             for i in range(1 << level):
                 buf = f.read(BUFSIZE)
                 if len(buf) == 0: break
@@ -146,6 +148,13 @@ class HashTable:
             else:
                 p = value.path()
             print(key.hex(), p, file=file)
+
+    def dupes(self):
+        r = []
+        for v in self._table.values():
+            if isinstance(v, list):
+                r.append(v)
+        return r
 
 def error(*args):
     print(*args, file=sys.stderr)
@@ -212,7 +221,13 @@ for fn in files:
         hashtable.append(v, fn)
     except OSError as e:
         error(str(e))
-hashtable.dump()
+
+dupes = hashtable.dupes()
+# for d in dupes:
+#     print([fn.path() for fn in d])
+hashlevel += 1
+for files in dupes:
+    hashtable = HashTable(hashlevel)
 
 # XXX
 # debug dump
